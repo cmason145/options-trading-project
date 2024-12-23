@@ -1,0 +1,3 @@
+# Hashes of file build rules.
+bd87e599a751acfd15c4b7b6cdc6402e CMakeFiles/MyTradingProject_autogen
+a2f9a4179758faae412e65d504847ef4 MyTradingProject_autogen/timestamp

@@ -1,0 +1,2 @@
+set(__QT_DEPLOY_TARGET_MyTradingProject_FILE /Users/chrism/Desktop/Trading Project/my_trading_project/build/MyTradingProject)
+set(__QT_DEPLOY_TARGET_MyTradingProject_TYPE EXECUTABLE)
