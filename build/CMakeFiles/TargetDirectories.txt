@@ -1,5 +1,0 @@
-/Users/chrism/Desktop/Trading Project/my_trading_project/build/CMakeFiles/MyTradingProject.dir
-/Users/chrism/Desktop/Trading Project/my_trading_project/build/CMakeFiles/edit_cache.dir
-/Users/chrism/Desktop/Trading Project/my_trading_project/build/CMakeFiles/rebuild_cache.dir
-/Users/chrism/Desktop/Trading Project/my_trading_project/build/CMakeFiles/MyTradingProject_autogen_timestamp_deps.dir
-/Users/chrism/Desktop/Trading Project/my_trading_project/build/CMakeFiles/MyTradingProject_autogen.dir

@@ -1,0 +1,37 @@
+services:
+  trading-app:
+    build: .
+    volumes:
+      - .:/app
+      - build_volume:/app/build
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ${XAUTHORITY:-~/.Xauthority}:/root/.Xauthority
+    environment:
+      - DISPLAY=:0
+      - QT_QPA_PLATFORM=xcb
+      - LIBGL_ALWAYS_INDIRECT=1
+      - XDG_RUNTIME_DIR=/tmp/runtime-dir
+      - XAUTHORITY=/root/.Xauthority
+      - QT_DEBUG_PLUGINS=1
+      - QT_LOGGING_RULES=*=true
+      - QT_QPA_DEBUG=1
+      - XDG_SESSION_TYPE=x11
+    network_mode: "host"
+    command: >
+      /bin/bash -c "
+        mkdir -p /tmp/runtime-dir &&
+        chmod 700 /tmp/runtime-dir &&
+        cd /app/build &&
+        cmake .. -DCMAKE_BUILD_TYPE=Debug &&
+        make VERBOSE=1 &&
+        gdb -ex run ./MyTradingProject
+      "
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    stdin_open: true
+    tty: true
+
+volumes:
+  build_volume:
