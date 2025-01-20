@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package trading;
+
+service OrderManagementService {
+    rpc PlaceOrder (OrderRequest) returns (OrderResponse);
+    rpc CancelOrder (CancelOrderRequest) returns (CancelOrderResponse);
+    rpc GetOrderStatus (OrderStatusRequest) returns (OrderStatusResponse);
+    rpc GetOrderHistory (OrderHistoryRequest) returns (OrderHistoryResponse);
+}
+
+message OrderRequest {
+    string symbol = 1;
+    string option_type = 2;  // CALL or PUT
+    double strike = 3;       // Changed from strike_price to strike
+    string expiration_date = 4;
+    string side = 5;         // BUY or SELL
+    string order_type = 6;   // MARKET, LIMIT, STOP, STOP_LIMIT
+    double quantity = 7;
+    double price = 8;        // Limit price or stop price
+    string time_in_force = 9; // DAY, GTC, IOC
+}
+
+message OrderResponse {
+    string order_id = 1;
+    string status = 2;      // PENDING, FILLED, REJECTED, CANCELLED
+    string message = 3;
+    double filled_quantity = 4;
+    double remaining_quantity = 5;
+    double average_price = 6;
+}
+
+message CancelOrderRequest {
+    string order_id = 1;
+}
+
+message CancelOrderResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message OrderStatusRequest {
+    string order_id = 1;
+}
+
+message OrderStatusResponse {
+    string order_id = 1;
+    string status = 2;
+    double filled_quantity = 3;
+    double remaining_quantity = 4;
+    double average_price = 5;
+    int64 last_update_time = 6;  // Changed from string to int64
+}
+
+message OrderHistoryRequest {
+    string start_date = 1;
+    string end_date = 2;
+    string symbol = 3;      // Optional filter by symbol
+    string status = 4;      // Optional filter by status
+}
+
+message OrderHistoryResponse {
+    message Order {
+        string order_id = 1;
+        string symbol = 2;
+        string option_type = 3;
+        double strike = 4;
+        string expiration_date = 5;
+        string side = 6;
+        string order_type = 7;
+        double quantity = 8;
+        double price = 9;
+        string status = 10;
+        int64 submission_time = 11;  // Changed from string to int64
+        int64 last_update_time = 12; // Changed from string to int64
+    }
+    repeated Order orders = 1;
+}

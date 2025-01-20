@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package trading;
+
+service ExecutionService {
+    // Execute a trade
+    rpc ExecuteTrade (ExecuteTradeRequest) returns (ExecuteTradeResponse);
+    
+    // Get execution report
+    rpc GetExecutionReport (ExecutionReportRequest) returns (ExecutionReportResponse);
+}
+
+message ExecuteTradeRequest {
+    string order_id = 1;
+    string symbol = 2;
+    string option_type = 3;    // CALL or PUT
+    double strike = 4;
+    string expiration_date = 5;
+    double quantity = 6;
+    double price = 7;
+    string side = 8;           // BUY or SELL
+    int64 timestamp = 9;
+}
+
+message ExecuteTradeResponse {
+    string execution_id = 1;
+    bool success = 2;
+    string message = 3;
+    double filled_quantity = 4;
+    double fill_price = 5;
+    int64 execution_time = 6;
+}
+
+message ExecutionReportRequest {
+    string execution_id = 1;
+}
+
+message ExecutionReportResponse {
+    string execution_id = 1;
+    string order_id = 2;
+    string symbol = 3;
+    string option_type = 4;
+    double strike = 5;
+    string expiration_date = 6;
+    double quantity = 7;
+    double price = 8;
+    string side = 9;
+    int64 timestamp = 10;
+    string status = 11;        // FILLED, PARTIALLY_FILLED, REJECTED
+    string reason = 12;        // Reason for rejection if applicable
+    double commission = 13;    // Trading commission
+    double fees = 14;          // Additional fees
+}

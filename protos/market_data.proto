@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package trading;
+
+service MarketDataService {
+    // Stream live market data for a specific symbol
+    rpc StreamMarketData (MarketDataRequest) returns (stream MarketDataResponse);
+    
+    // Get the full option chain for a symbol
+    rpc GetOptionChain (OptionChainRequest) returns (OptionChainResponse);
+}
+
+message MarketDataRequest {
+    string symbol = 1;
+    string option_type = 2;  // CALL or PUT
+    double strike = 3;
+    string expiration = 4;
+}
+
+message MarketDataResponse {
+    string symbol = 1;
+    string option_type = 2;
+    double strike = 3;
+    double bid = 4;
+    double ask = 5;
+    double price = 6;        // Changed from last_price to price
+    double volume = 7;
+    double implied_volatility = 8;
+    double delta = 9;
+    double gamma = 10;
+    double theta = 11;
+    double vega = 12;
+    double rho = 13;
+    int64 timestamp = 14;
+}
+
+message OptionChainRequest {
+    string underlying_symbol = 1;  // Match the field name used in the code
+    string expiration = 2;
+}
+
+message OptionChainResponse {
+    repeated MarketDataResponse calls = 1;   // Changed structure to use MarketDataResponse
+    repeated MarketDataResponse puts = 2;    // for both calls and puts
+    double underlying_price = 3;
+    int64 timestamp = 4;
+}

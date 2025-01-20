@@ -1,119 +1,76 @@
-# Base image
-FROM ubuntu:22.04
+# Build stage
+FROM ubuntu:22.04 as build
 
-# Avoid interactive dialog during package installation
+# Environment variables
 ENV DEBIAN_FRONTEND=noninteractive
+ENV GRPC_RELEASE_TAG v1.16.0
+ENV TRADING_BUILD_PATH /usr/local/trading
 
-# Create developer user and group but don't switch to it yet
-RUN mkdir -p /home/developer && \
-    echo "developer:x:1000:1000:Developer,,,:/home/developer:/bin/bash" >> /etc/passwd && \
-    echo "developer:x:1000:" >> /etc/group && \
-    chown developer:developer /home/developer
-
-# Install basic build tools and dependencies
+# Install basic dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     cmake \
     git \
     pkg-config \
     wget \
-    software-properties-common \
+    autoconf \
+    automake \
+    libtool \
     curl \
     libssl-dev \
-    libcurl4-openssl-dev\
+    libcurl4-openssl-dev \
     nlohmann-json3-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Vulkan Dependencies
-RUN apt-get update && apt-get install -y \
-    libvulkan-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install OpenGL dependencies
-RUN apt-get update && apt-get install -y \
-    libgl1-mesa-dev \
-    libglu1-mesa-dev \
-    libxkbcommon-x11-0 \
-    libvulkan1 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Add Qt repository and install Qt6
-RUN apt-get update && apt-get install -y software-properties-common
-RUN add-apt-repository ppa:oibaf/graphics-drivers
-
-# Install Qt6 and components
-RUN apt-get update && apt-get install -y \
-    qt6-base-dev \
-    qt6-base-private-dev \
-    qt6-declarative-dev \
-    libqt6charts6-dev \
-    libqt6charts6 \
-    qt6-tools-dev \
-    libqt6core6 \
-    libqt6gui6 \
-    libqt6widgets6 \
-    libqt6opengl6-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install Boost
-RUN apt-get update && apt-get install -y \
     libboost-all-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install ZeroMQ
-RUN apt-get update && apt-get install -y \
     libzmq3-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install TBB
-RUN apt-get update && apt-get install -y \
     libtbb-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install QuantLib
-RUN apt-get update && apt-get install -y \
     libquantlib0v5 \
     libquantlib0-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install X11 dependencies for GUI applications
-RUN apt-get update && apt-get install -y \
-    libx11-xcb1 \
-    libxcb-icccm4 \
-    libxcb-image0 \
-    libxcb-keysyms1 \
-    libxcb-randr0 \
-    libxcb-render-util0 \
-    libxcb-shape0 \
-    libxcb-xinerama0 \
-    libxcb-xkb1 \
-    xauth \
-    x11-apps \
-    && rm -rf /var/lib/apt/lists/*
+# Clone and build gRPC
+RUN git clone -b ${GRPC_RELEASE_TAG} https://github.com/grpc/grpc /var/local/git/grpc && \
+    cd /var/local/git/grpc && \
+    git submodule update --init --recursive
 
-RUN apt-get update && apt-get install -y \
-    gdb \
-    && rm -rf /var/lib/apt/lists/*
+# Install protobuf
+RUN cd /var/local/git/grpc/third_party/protobuf && \
+    ./autogen.sh && \
+    ./configure --enable-shared && \
+    make -j$(nproc) && \
+    make install && \
+    ldconfig
 
-# Set up working directory
-WORKDIR /app
+# Install gRPC
+RUN cd /var/local/git/grpc && \
+    make -j$(nproc) && \
+    make install && \
+    ldconfig
 
-# Copy CMakeLists.txt and source files
-COPY . .
+# Copy source code
+COPY . $TRADING_BUILD_PATH/src/trading/
 
-RUN mkdir -p /tmp/.X11-unix && \
-    chmod 1777 /tmp/.X11-unix
+# Build trading platform
+RUN mkdir -p $TRADING_BUILD_PATH/out/trading && \
+    cd $TRADING_BUILD_PATH/out/trading && \
+    cmake -DCMAKE_BUILD_TYPE=Release $TRADING_BUILD_PATH/src/trading && \
+    make -j$(nproc) && \
+    mkdir -p bin && \
+    ldd trading_server | grep "=> /" | awk '{print $3}' | xargs -I '{}' cp -v '{}' bin/ && \
+    mv trading_server bin/trading_server && \
+    echo "LD_LIBRARY_PATH=/opt/trading/:\$LD_LIBRARY_PATH ./trading_server" > bin/start.sh && \
+    chmod +x bin/start.sh
 
-# Create build directory and set permissions
-RUN mkdir -p build && \
-    chown -R developer:developer /app && \
-    chmod -R 777 /app/build
+# Runtime stage
+FROM ubuntu:22.04 as runtime
 
-# Now switch to developer user
-USER developer
+# Copy built binaries and libraries
+COPY --from=build /usr/local/trading/out/trading/bin/ /opt/trading/
 
-# Set environment variables
-ENV QT_QPA_PLATFORM=xcb
-ENV CMAKE_PREFIX_PATH=/usr/lib/aarch64-linux-gnu/cmake
+# Expose gRPC port
+EXPOSE 50051
 
-CMD ["bash"]
+# Set working directory
+WORKDIR /opt/trading/
+
+# Start trading server
+ENTRYPOINT ["/bin/bash", "start.sh"]

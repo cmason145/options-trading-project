@@ -1,17 +1,19 @@
 services:
-  trading-server:
+  trading-app:
     build: .
     volumes:
       - .:/app
       - build_volume:/app/build
-    ports:
-      - "50051:50051"
+    environment:
+      - LIBGL_ALWAYS_INDIRECT=1
+      - QT_QPA_DEBUG=1
+    network_mode: "host"
     command: >
       /bin/bash -c "
         cd /app/build &&
         cmake .. -DCMAKE_BUILD_TYPE=Debug &&
         make VERBOSE=1 &&
-        gdb -ex run ./trading_server
+        gdb -ex run ./MyTradingProject
       "
     cap_add:
       - SYS_PTRACE
